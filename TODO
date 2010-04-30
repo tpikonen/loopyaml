@@ -1,0 +1,2 @@
+* Make scalars in the looped sequence have fixed field width.
+* Copy tests from PyYaml
