@@ -1,3 +1,4 @@
+import math
 from yaml.representer import *
 from yaml.nodes import *
 from loopsequence import *
@@ -76,7 +77,7 @@ class LoopRepresenter(Representer):
         Representer.__init__(self, **kwargs)
 
     def represent_float(self, data):
-        if data != data or (data == 0.0 and data == 1.0):
+        if math.isnan(data):
             value = u'.nan'
         elif data == self.inf_value:
             value = u'.inf'
