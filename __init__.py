@@ -1,6 +1,8 @@
+import yaml.constructor
 from yaml import *
 from dumper import LoopDumper
 from loopdict import *
+from constructor import construct_loopdict
 
 
 # Fix functions imported from yaml to use the LoopDumper class.
@@ -24,4 +26,6 @@ add_representer       = replace_dumper(add_representer)
 add_multi_representer = replace_dumper(add_multi_representer)
 
 
-
+yaml.constructor.Constructor.add_constructor(
+        u'tag:yaml.org,2002:map',
+        construct_loopdict)
