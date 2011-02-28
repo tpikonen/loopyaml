@@ -29,6 +29,13 @@ def loopdict_representer(self, data, flow_style=False):
     dloop = {}
     for k in data.loopvars:
         dloop[k] = dnorm.pop(k)
+    attkeys = data.attributes
+    attdict = {}
+    for att in attkeys:
+        attvals = []
+        for k in data.loopvars:
+            attvals.append(dnorm.pop(k+att, None))
+        attdict[att] = attvals
     tag = u'tag:yaml.org,2002:map'
     mapping = dnorm
     # copypaste from represent_mapping
@@ -57,6 +64,10 @@ def loopdict_representer(self, data, flow_style=False):
     vars_key = self.represent_data('=cols')
     vars_item = self.represent_data(data.loopvars)
     value.append((vars_key, vars_item))
+    for att in attkeys:
+        akey = self.represent_data('='+att)
+        aval = self.represent_data(attdict[att])
+        value.append((akey, aval))
     loopseq = []
     for i in range(len(data[data.loopvars[0]])):
         for k in data.loopvars:
