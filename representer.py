@@ -2,14 +2,23 @@ import math
 from yaml.representer import *
 from yaml.nodes import *
 from loopsequence import *
+from loopdict import *
 
-def represent_loopsequence(self, tag, sequence, columns, flow_style=True):
+class ColumnSequence(list):
+    def __init__(self, sequence=[], ncols=1):
+        list.__init__(self)
+        self.extend(sequence)
+        self.ncols = ncols
+
+
+def represent_columnsequence(self, colseq, flow_style=True):
+    tag = u'tag:yaml.org,2002:seq'
     value = []
-    node = LoopSequenceNode(tag, value, columns, flow_style=flow_style)
+    node = LoopSequenceNode(tag, value, colseq.ncols, flow_style=flow_style)
     if self.alias_key is not None:
         self.represented_objects[self.alias_key] = node
     best_style = True
-    for item in sequence:
+    for item in colseq:
         node_item = self.represent_data(item)
         if not (isinstance(node_item, ScalarNode) and not node_item.style):
             best_style = False
@@ -22,22 +31,8 @@ def represent_loopsequence(self, tag, sequence, columns, flow_style=True):
     return node
 
 
-def loopdict_representer(self, data, flow_style=False):
-    """PyYAML representer for the Loopdict type."""
-    # self is the yaml.Representer object
-    dnorm = data.copy()
-    dloop = {}
-    for k in data.loopvars:
-        dloop[k] = dnorm.pop(k)
-    attkeys = data.attributes
-    attdict = {}
-    for att in attkeys:
-        attvals = []
-        for k in data.loopvars:
-            attvals.append(dnorm.pop(k+att, None))
-        attdict[att] = attvals
+def prepare_mappingnode(self, mapping, flow_style=False):
     tag = u'tag:yaml.org,2002:map'
-    mapping = dnorm
     # copypaste from represent_mapping
     value = []
     node = MappingNode(tag, value, flow_style=flow_style)
@@ -61,22 +56,42 @@ def loopdict_representer(self, data, flow_style=False):
         else:
             node.flow_style = best_style
     # copypaste ends
-    vars_key = self.represent_data('=cols')
-    vars_item = self.represent_data(data.loopvars)
-    value.append((vars_key, vars_item))
-    for att in attkeys:
-        akey = self.represent_data('='+att)
-        aval = self.represent_data(attdict[att])
-        value.append((akey, aval))
-    loopseq = []
-    for i in range(len(data[data.loopvars[0]])):
-        for k in data.loopvars:
-            loopseq.append(data[k][i])
-    loop_key = self.represent_data('=loop')
-    loop_item = represent_loopsequence(self, u'tag:yaml.org,2002:seq', loopseq,
-            len(data.loopvars))
-    value.append((loop_key, loop_item))
+    return node, value
 
+
+def represent_loopdict(self, data, flow_style=False):
+    """PyYAML representer for the Loopdict type."""
+    ## self is the yaml.Representer object
+
+    # Prepare a dict without loopvars or attributes
+    dnorm = data.copy()
+    for loop in data.loops:
+        for k in loop[0]:
+            dnorm.pop(k, None) # None because of possible duplicates
+            for att in loop[1]:
+                dnorm.pop(k+att, None)
+    # Output the reduced dict
+    mapping = dnorm
+    node, value = prepare_mappingnode(self, mapping)
+    # Output loops
+    # FIXME: check if '=loops=' key exists in dict
+    loops_key = self.represent_data('=loops=')
+    lseq = []
+    for loop in data.loops:
+        cols = list(loop[0]) # New copy to avoid YAML references
+        lmap = {'$cols' : cols }
+        for att in loop[1]:
+            attlist = []
+            for k in loop[0]:
+                attlist.append(data.get(k+att))
+            lmap['+'+att] = attlist
+        valseq = []
+        for i in range(len(data[loop[0][0]])):
+            for k in loop[0]:
+                valseq.append(data[k][i])
+        lmap['~vals'] = ColumnSequence(valseq, len(loop[0]))
+        lseq.append(lmap)
+    value.append((loops_key, self.represent_data(lseq)))
     return node
 
 
@@ -108,5 +123,10 @@ class LoopRepresenter(Representer):
                 value = value.replace(u'e', u'.0e', 1)
         return self.represent_scalar(u'tag:yaml.org,2002:float', value)
 
+
 LoopRepresenter.add_representer(float,
         LoopRepresenter.represent_float)
+LoopRepresenter.add_representer(ColumnSequence,
+        represent_columnsequence)
+LoopRepresenter.add_representer(Loopdict,
+        represent_loopdict)
