@@ -3,6 +3,12 @@ from yaml.constructor import *
 from loopdict import *
 
 
+class LoopConstructor(Constructor):
+
+    def __init__(self):
+        Constructor.__init__(self)
+
+
 def construct_loopdict(self, node):
     yd = SafeConstructor.construct_mapping(self, node, deep=True)
     if yd.has_key('=loops='):
@@ -31,3 +37,8 @@ def construct_loopdict(self, node):
         return Loopdict(yd, loops=loops)
     else:
         return yd
+
+
+LoopConstructor.add_constructor(
+        u'tag:yaml.org,2002:map',
+        construct_loopdict)

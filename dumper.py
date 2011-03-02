@@ -1,10 +1,7 @@
-from yaml.dumper import *
-from yaml.representer import *
 from yaml.resolver import *
 from emitter import *
 from serializer import *
 from representer import *
-from loopdict import *
 
 
 class LoopDumper(LoopEmitter, LoopSerializer, LoopRepresenter, Resolver):
