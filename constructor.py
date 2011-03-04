@@ -11,10 +11,21 @@ class LoopConstructor(Constructor):
 
 def construct_loopdict(self, node):
     yd = SafeConstructor.construct_mapping(self, node, deep=True)
-    if yd.has_key('=loops='):
-        lseq = yd.pop('=loops=')
-        loops = []
-        for loop in lseq:
+    looped = False
+    try:
+        looped = yd['=loops='][0].has_key('$cols') \
+            and yd['=loops='][0].has_key('~vals')
+    except KeyError:
+        pass
+    except TypeError:
+        pass
+    if not looped:
+        return yd
+
+    lseq = yd.pop('=loops=')
+    loops = []
+    for loop in lseq:
+        try:
             lvars = loop.pop('$cols')
             vals = loop.pop('~vals')
             ncols = len(lvars)
@@ -34,9 +45,9 @@ def construct_loopdict(self, node):
                         for i in xrange(len(lvars)):
                             yd[lvars[i]+attname] = vals[i]
             loops.append((lvars, attributes))
-        return Loopdict(yd, loops=loops)
-    else:
-        return yd
+        except KeyError:
+            yd['=loops='] = loop['=loops=.orig']
+    return Loopdict(yd, loops=loops)
 
 
 LoopConstructor.add_constructor(

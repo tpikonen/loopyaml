@@ -70,11 +70,10 @@ def represent_loopdict(self, data, flow_style=False):
             dnorm.pop(k, None) # None because of possible duplicates
             for att in loop[1]:
                 dnorm.pop(k+att, None)
+    origloops = dnorm.pop('=loops=', None)
     # Output the reduced dict
-    mapping = dnorm
-    node, value = prepare_mappingnode(self, mapping)
+    node, value = prepare_mappingnode(self, dnorm)
     # Output loops
-    # FIXME: check if '=loops=' key exists in dict
     loops_key = self.represent_data('=loops=')
     lseq = []
     for loop in data.loops:
@@ -91,6 +90,8 @@ def represent_loopdict(self, data, flow_style=False):
                 valseq.append(data[k][i])
         lmap['~vals'] = ColumnSequence(valseq, len(loop[0]))
         lseq.append(lmap)
+    if origloops:
+        lseq.append({'=loops=.orig': origloops})
     value.append((loops_key, self.represent_data(lseq)))
     return node
 
