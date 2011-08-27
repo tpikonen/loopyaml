@@ -3,15 +3,24 @@ import types
 class Loopdict(dict):
     """A dictionary which can be serialized with YAML loop notation.
 
-    The looped keys are given in the list `loopvars`. The values
-    of the looped keys must be lists of floats of equal length.
+    The looped keys and attributes are given either in the keyword
+    arguments `loopvars` and `attributes` as lists, or, if more
+    than one loop is desired, in the keyword argument `loops` as a
+    list of 2-tuples which contain the loopvars and attributes lists
+    (e.g. loops=[(loopvars1, attrs1), (loopvars1, attrs2)]).
 
-    `attributes` is a list of extensions to `loopvars` variable names.
-    Variable names of the form `loopvars[i]`+`attributes[j]` (for all
-    i and j) in the dictionary are written to lists keyed by the
-    attribute.
+    The `loopvars` list gives the keys in the dictionary which
+    are looped in the YAML output. The values of the looped keys
+    must be lists of floats of equal length.
 
-    The elements of `loopvars` and `attributes` lists must be strings.
+    The `attributes` list contains extensions to `loopvars`
+    variable names, which are output as scalar attributes in the
+    tabular output. Keys of the form `loopvars[i]`+`attributes[j]`
+    (for all i and j) should exist in the dictionary.
+
+    The elements of `loopvars` and `attributes` lists must be strings
+    (i.e. other allowed types for Dict keys such as floats will not
+    work.)
     """
     def __init__(self, d, loopvars=[], attributes=[], loops=[]):
         dict.__init__(self)
